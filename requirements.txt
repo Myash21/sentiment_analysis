@@ -1,0 +1,4 @@
+scikit-learn
+django
+nltk
+bs4
