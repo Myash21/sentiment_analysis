@@ -1,5 +1,6 @@
+# views.py
 from django.shortcuts import render
-import os
+from django.http import HttpResponse
 import pickle
 import re
 from bs4 import BeautifulSoup
@@ -7,7 +8,6 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
-# Download necessary NLTK data
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
@@ -16,9 +16,6 @@ lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
 def clean_text(text):
-    # Convert to lowercase
-    text = text.lower()
-    
     # Remove HTML tags
     text = BeautifulSoup(text, "html.parser").get_text()
 
@@ -38,17 +35,13 @@ def clean_text(text):
     return text
 
 def lemmatize_text(text):
-    return " ".join([lemmatizer.lemmatize(word) for word in text.split()])  
-
-# Define the path to the models
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODELS_DIR = os.path.join(BASE_DIR, 'reviews', 'ml_models')
+    return " ".join([lemmatizer.lemmatize(word) for word in text.split()])
 
 # Load the pickle files
-with open(os.path.join(MODELS_DIR, 'count_vectorizer.pkl'), 'rb') as f:
+with open('reviews/ml_models/count_vectorizer.pkl', 'rb') as f:
     cv = pickle.load(f)
 
-with open(os.path.join(MODELS_DIR, 'naive_bayes_model.pkl'), 'rb') as f:
+with open('reviews/ml_models/naive_bayes_model.pkl', 'rb') as f:
     nb_bow = pickle.load(f)
 
 def preprocess_and_predict(review):
@@ -58,10 +51,10 @@ def preprocess_and_predict(review):
     prediction = nb_bow.predict(review_vectorized)
     return prediction
 
-def home(request):
-    prediction = None
+def index(request):
     if request.method == 'POST':
-        review = request.POST.get('review')
+        review = request.POST['review']
         prediction = preprocess_and_predict(review)
-        prediction = "Positive" if int(prediction[0]) == 1 else "Negative"
-    return render(request, 'reviews/index.html', {'prediction': prediction})
+        prediction_text = 'Positive' if prediction[0] == 1 else 'Negative'
+        return render(request, 'reviews/index.html', {'prediction': prediction_text, 'review': review})
+    return render(request, 'reviews/index.html')
